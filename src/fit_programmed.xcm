@@ -1,0 +1,25 @@
+query no
+setplot wave
+setplot xlog off
+
+set base hrcf14418N003
+set maxorder 1
+
+data data/14418/tg_reprocess/${base}_npha2.fits{1},data/14418/tg_reprocess/${base}_npha2.fits{2}
+back data/14418/tg_reprocess/hrcf14418N003_bkg2.fits{1},data/14418/tg_reprocess/hrcf14418N003_bkg2.fits{2}
+
+for { set i 1 } { $i <= $maxorder } { incr i } {
+  response $i: data/14418/tg_reprocess/LEG_-$i.rmf data/14418/tg_reprocess/LEG_$i.rmf
+  arf $i: data/14418/tg_reprocess/${base}LEG_-${i}_garf.fits data/14418/tg_reprocess/${base}LEG_${i}_garf.fits
+}
+
+ignore 1-2:**-15.,90.-**
+
+@model_2T
+
+setplot rebin 20 1000
+
+fit 50
+
+cpd /xs
+plot ldata ratio

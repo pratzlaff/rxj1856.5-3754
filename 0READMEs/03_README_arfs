@@ -1,0 +1,73 @@
+#! /bin/bash
+
+obsids="$@"
+
+<<'COMMENT'
+. ./src/functions.bash
+. /data/legs/rpete/flight/analysis_functions/util.bash
+obsids=$(obsids)
+obsids=$(grep '^[0-9]' obsids | grep -i hrc | cut -f1)
+screen -dmS arfs bash -c 'exec bash'
+n=6
+for i in {1..6}
+do
+  o=$(i_of_n $i $n $obsids)
+  screen -S arfs -X screen bash -c "time /bin/bash 0READMEs/03_README_arfs $o; exec bash"
+done
+screen -rS arfs
+COMMENT
+
+shopt -s expand_aliases
+. ~/.bash_aliases
+ciao
+
+. src/functions.bash
+. /data/legs/rpete/flight/analysis_functions/tmppdir.bash
+. /data/legs/rpete/flight/analysis_functions/arfs.bash
+
+arfdir=./arfs
+
+qev=16
+qeuv=16
+
+qedir=/data/legs/rpete/flight/hrcs_qe/N00$qev/qe
+qeudir=/data/legs/rpete/flight/hrcs_qeu/ARD/v${qeuv}/qeu
+
+qev=N00$qev
+qeuv=N00$qeuv
+
+hrcarfdir=$arfdir/qe_${qev}_qeu_${qeuv}
+acisarfdir=$arfdir/acis
+
+mkdir -p $hrcarfdir $acisarfdir
+
+for o in $obsids
+do
+    indir=./data/$o/tg_reprocess
+
+    true && instrument $o | grep -qi hrc && {
+        arfdir=$hrcarfdir
+        pha2=$(ls data/$o/tg_reprocess/*_pha2.fits)
+
+        punlearn ardlib
+
+        qe_file=$(match_caldb_file "$pha2" qe "$qedir" "$qev")
+        pset ardlib AXAF_HRC-S1_QE_FILE="$qe_file"'[AXAF_QE1]'
+        pset ardlib AXAF_HRC-S2_QE_FILE="$qe_file"'[AXAF_QE2]'
+        pset ardlib AXAF_HRC-S3_QE_FILE="$qe_file"'[AXAF_QE3]'
+
+        qeu_file=$(match_caldb_file "$pha2" qeu "$qeudir" "$qeuv")
+        pset ardlib AXAF_HRC-S1_QEU_FILE="$qeu_file"'[AXAF_QEU1]'
+        pset ardlib AXAF_HRC-S2_QEU_FILE="$qeu_file"'[AXAF_QEU2]'
+        pset ardlib AXAF_HRC-S3_QEU_FILE="$qeu_file"'[AXAF_QEU3]'
+
+        generate_garfs "$indir" "$arfdir"
+        punlearn ardlib
+    }
+
+    false && instrument $o | grep -qi acis && {
+        arfdir=$acisarfdir
+        maxorder=1
+        generate_garfs "$indir" "$arfdir"
+    }
+done

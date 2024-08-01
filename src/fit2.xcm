@@ -1,0 +1,32 @@
+query no
+statistic cstat
+setplot wave
+set maxorder 3
+
+foreach y [list 2001 2013 2019] {
+    data ${y}_leg_abs1.pha
+    for { set order 1 } { $order <= $maxorder } { incr order } {
+	response $order: ${y}_leg_abs${order}.rmf
+	arf $order: ${y}_leg_abs${order}.arf
+    }
+
+    ignore **-10.,90.-**
+
+    model 1:m1 tbabs*bbody
+    9.63687e-3
+    6.20117e-2
+    3.47149e-4
+    for { set order 2 } { $order <= $maxorder } { incr order } {
+	model $order:m$order tbabs*bbody
+	= m1:1
+	= m1:2
+	= m1:3
+    }
+
+    fit 50
+
+    cpd /xs
+    setplot rebin 20 1000
+    plot ldata ratio
+    show all
+}

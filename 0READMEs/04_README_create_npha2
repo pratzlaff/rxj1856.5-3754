@@ -1,0 +1,15 @@
+#! /bin/bash
+
+shopt -s expand_aliases
+. ~/.bash_aliases
+
+heainit
+
+for d in data/*/tg_reprocess
+do
+    [ -f $d/*npha2* ] && continue
+    cd "$d"
+    rm -f *npha2* *bkg2*
+    /data/legs/rpete/flight/acis_letg_cedge/grating2xspec *_pha2* both
+    cd -
+done

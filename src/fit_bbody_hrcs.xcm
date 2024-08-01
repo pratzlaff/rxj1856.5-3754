@@ -1,0 +1,53 @@
+query no
+setplot wave
+setplot xlog off
+set caldb $env(CALDB)
+
+foreach maxorder [list 1 5] {
+    foreach combine [list m p abs] {
+	foreach year [list 2001 2013 2019] {
+	    data spectra/${caldb}/${combine}/${year}_leg_${combine}1.pha
+	    back spectra/${caldb}/${combine}/${year}_leg_${combine}1_bkg.pha
+	    for { set order 1 } { $order <= $maxorder } { incr order } {
+		response $order: spectra/${caldb}/${combine}/${year}_leg_${combine}${order}.rmf
+		arf $order: spectra/${caldb}/${combine}/${year}_leg_${combine}${order}.arf
+	    }
+
+	    ignore **-15.,90.-**
+
+@src/model_bbody
+
+	    fit 50
+
+	    setplot delete all
+
+	    if { $maxorder > 1 } {
+		for { set i 1 } { $i <= $maxorder } { incr i } {
+		    set j [expr $i+2]
+		    setplot command color [expr $i+1] on $j
+		}
+	    }
+
+	    set outfile [format "fits/%s/rxj1856_bbody_%s_%s_orders_%s" $caldb $year $combine $maxorder]
+
+	    set logfile "${outfile}.log"
+	    set plotfile "${outfile}.ps/cps"
+	    set qdpfile "${outfile}.qdp"
+
+	    file delete ${qdpfile}
+	    setplot rebin 20 1000
+	    setplot command wdata ${qdpfile}
+	    cpd ${plotfile}
+	    plot ldata ratio
+	    cpd /null
+
+	    error m1:1 m1:2 m1:3
+
+	    log ${logfile}
+	    show all
+	    log none
+	}
+    }
+}
+
+exit

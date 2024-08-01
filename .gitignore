@@ -1,0 +1,7 @@
+*~
+arfs/
+data/
+fits/
+plots/
+spectra/
+src/__pycache__/

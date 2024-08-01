@@ -1,0 +1,18 @@
+#! /bin/bash
+
+shopt -s expand_aliases
+. ~/.bash_aliases
+
+heainit
+
+caldbs='qe_N0016_qeu_N0016'
+
+for caldb in $caldbs
+do
+    outdir=./fits/$caldb
+    mkdir -p $outdir
+
+    env CALDB=$caldb xspec - src/fit_bbody_hrcs.xcm 2>&1 | tee $outdir/fits_bbody.log
+    #env CALDB=$caldb xspec - src/fit_2T.xcm 2>&1 | tee $outdir/fits_2T.log
+    env CALDB=$caldb xspec - src/fit_2T_both.xcm 2>&1 | tee $outdir/fits_2T_both.log
+done

@@ -1,0 +1,17 @@
+statistic lstat
+method leven 10 0.01
+abund wilm
+model 1:m1 tbabs*(bbodyrad+bbodyrad)
+8.23626E-03 1e-4
+6.25914E-02 1e-3
+1.65244E+05 1e3
+137 -1
+10 0.1
+for { set order 2 } { $order <= $maxorder } { incr order } {
+    model $order:m$order tbabs*(bbodyrad+bbodyrad)
+    = m1:1
+    = m1:2
+    = m1:3
+    = m1:4
+    = m1:5
+}

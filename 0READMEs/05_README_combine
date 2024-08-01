@@ -1,0 +1,73 @@
+#! /bin/bash
+
+order="$@"
+
+<<'COMMENT'
+screen -dmS combine bash -c 'exec bash'
+for order in {1..5}
+do
+  screen -S combine -X screen bash -c "time /bin/bash 0READMEs/05_README_combine $order; exec bash"
+done
+screen -rS combine
+COMMENT
+
+# match years with their obsid globs
+declare -A globs
+globs=(
+    [2001]='3???'
+    [2013]='{14418,15293}'
+    [2019]='{2228?,21{693,896}}'
+)
+
+caldb=qe_N0016_qeu_N0016
+
+. src/functions.bash
+
+shopt -s expand_aliases
+. ~/.bash_aliases
+
+ciao -o
+. /data/legs/rpete/flight/analysis_functions/tmppdir.bash
+
+echo $PFILES
+pdir=$(echo $PFILES | cut -d';' -f1 | cut -d':' -f1)
+punlearn combine_grating_spectra
+perl -i.orig -npe \
+     's/\Q1|2|3|-1|-2|-3\E/1|2|3|2|3|4|5|6|7|8|9|10|-1|-2|-3|-4|-5|-6|-7|-8|-9|-10/' \
+     $pdir/combine_grating_spectra.par
+
+for combine in m p abs
+do
+    outdir=./spectra/$caldb/$combine
+    mkdir -p $outdir
+
+    orderstr=$order
+    addplusminusarg=
+
+    [ $combine == m ] && orderstr=-$order
+
+    orderglob=$orderstr
+
+    [ $combine == abs ] && {
+	orderglob="*$order"
+	addplusminusarg='add_plusminus=yes'
+    }
+
+    for year in "${!globs[@]}"
+    do
+	obsidglob="${globs[$year]}"
+	pha2s=$(eval echo ./data/$obsidglob/tg_reprocess/*_pha2.fits | sed 's/ /,/g')
+	arfs=$(eval echo ./arfs/${caldb}/${obsidglob}_*LEG_${orderglob}_garf.fits | sed 's/ /,/g')
+	rmfs="/data/legs/rpete/flight/rmfs/HRC-S-LEG_${orderglob}.rmf"
+
+	combine_grating_spectra \
+	    infile="$pha2s" \
+	    outroot=$outdir/$year \
+	    garm=LEG \
+	    order=$orderstr \
+	    $addplusminusarg \
+	    arf="$arfs" \
+	    rmf="$rmfs" \
+	    clobber+
+    done
+done

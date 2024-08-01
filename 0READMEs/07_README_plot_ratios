@@ -1,0 +1,16 @@
+#! /bin/bash
+
+export PYTHONPATH=/data/legs/rpete/flight/analysis_functions
+
+caldbs='qe_N0016_qeu_N0016'
+
+for caldb in $caldbs
+do
+    outdir=./plots/$caldb
+    mkdir -p $outdir
+
+    /usr/bin/python3 src/hrcs_ratios.py \
+      --hrcdir ./spectra/$caldb \
+      --fitdir ./fits/$caldb \
+      -p $outdir/rxj1856_hrcs_flux_ratios.pdf
+done

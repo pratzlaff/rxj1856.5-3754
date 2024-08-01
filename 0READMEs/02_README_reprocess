@@ -1,0 +1,29 @@
+#! /bin/bash
+
+shopt -s expand_aliases
+. ~/.bash_aliases
+ciao
+
+. src/functions.bash
+
+tgreprocess=/data/legs/rpete/flight/dev/tg_reprocess
+
+# whether to force reprocessing if tg_reprocess outdir already exists
+force=0
+
+for o in $(obsids)
+do
+    [ -f data/$o/tg_reprocess/*_pha2.fits -a $force -eq 0 ] && continue
+
+    orders=''
+    instrument $o | grep -qi hrc && orders='--orders 5'
+
+    badpix=''
+    instrument $o | grep -qi hrc && badpix='--badpix CALDB'
+
+    perl $tgreprocess --pifilter=none --nogrmf $orders $badpix data/$o 2>&1 | tee data/$o/tg_reprocess.log
+
+    rm -f data/$o/tg_reprocess/*_evt1{a,}.fits
+done
+
+# o=20718; ds9 data/$o/tg_reprocess/*evt2.fits -bin factor 8 -scale mode 99.5
